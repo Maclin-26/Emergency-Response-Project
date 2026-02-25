@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
+    "@react-oauth/google": "^0.12.1",
+    "axios": "^1.13.5",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jwt-decode": "^4.0.0",
+    "leaflet": "^1.9.4",
+    "leaflet-routing-machine": "^3.2.12",
+    "lucide-react": "^0.574.0",
+    "mongoose": "^9.2.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.30.3",
+    "react-scripts": "^5.0.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
+  }
+}
