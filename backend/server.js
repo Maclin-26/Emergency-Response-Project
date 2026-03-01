@@ -4,20 +4,23 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-const app = express();
+const app = express(); // 1. Moved this UP so 'app' exists before we use it
 
-// UPDATED: Set CORS to "*" so your friend can connect from their system
-app.use(cors({ origin: "*" })); 
+// 2. Optimized CORS (One single definition for everything)
+app.use(cors({ 
+    origin: "*", 
+    credentials: true 
+})); 
 app.use(express.json());
 
-// 1. DATABASE CONNECTION (MongoDB Atlas)
+// 3. DATABASE CONNECTION
 const atlasURI = "mongodb+srv://Maclin:Maclinmac1122@cluster0.ilbpnxp.mongodb.net/emergencyDB?retryWrites=true&w=majority&appName=Cluster0";
 
 mongoose.connect(atlasURI)
     .then(() => console.log("✅ Connected to MongoDB ATLAS (Cloud)"))
     .catch(err => console.error("❌ Atlas Connection Error:", err));
 
-// 2. USER SCHEMA
+// 4. USER SCHEMA
 const User = mongoose.model('User', new mongoose.Schema({
     fullName: String,
     email: { type: String, unique: true },
@@ -26,7 +29,12 @@ const User = mongoose.model('User', new mongoose.Schema({
     role: String
 }));
 
-// 3. SIGNUP ROUTE
+// 5. HOME ROUTE (Fixes the "Cannot GET /" message)
+app.get('/', (req, res) => {
+    res.send("🚀 Emergency Backend is Live and Running!");
+});
+
+// 6. SIGNUP ROUTE
 app.post('/api/signup', async (req, res) => {
     try {
         const newUser = new User(req.body);
@@ -38,7 +46,22 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-// 4. SOCKET SERVER SETUP
+// 7. LOGIN ROUTE (Added this so your Login.js actually works!)
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email, password });
+        if (user) {
+            res.json({ message: "Login Successful", user });
+        } else {
+            res.status(401).json({ message: "Invalid email or password" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+// 8. SOCKET SERVER SETUP
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: { 
@@ -55,15 +78,11 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send_request_to_driver", (data) => {
-        // We attach the citizen's socket ID so the driver knows who to reply to
         socket.broadcast.emit("incoming_request", { ...data, citizenSocketId: socket.id });
     });
 
-    // --- NEW LOGIC: PASS REAL DRIVER INFO TO CITIZEN ---
     socket.on("accept_request", (data) => {
         console.log("🚑 Driver accepted request. Sending info to citizen:", data.citizenSocketId);
-        
-        // This sends the driver's real name and phone only to the citizen who requested it
         io.to(data.citizenSocketId).emit("driver_assigned", {
             driverName: data.driverName,
             driverPhone: data.driverPhone
@@ -73,10 +92,8 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => console.log("User disconnected"));
 });
 
-// 5. START SERVER
+// 9. START SERVER
 const PORT = process.env.PORT || 10000;
-
-// Adding '0.0.0.0' is a pro-tip for Render/Cloud deployments
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server is running on port ${PORT}`);
 });
