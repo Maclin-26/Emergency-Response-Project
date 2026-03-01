@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { io } from 'socket.io-client';
+import { io } from 'socket.io-client'; // Import is here...
 import 'leaflet/dist/leaflet.css';
 import './Dashboard.css';
 
@@ -13,11 +13,10 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- TUNNEL URL ---
-// Open your JS files and change this line:
+// --- API & SOCKET SETUP ---
 const API_URL = "https://emergency-backend-maclin.onrender.com";
-// ✅ RIGHT: You must define the variable name first
-const TUNNEL_URL = "https://emergency-backend-maclin.onrender.com";
+// 1. ADD THIS LINE: This creates the actual connection to your Render backend
+const socket = io(API_URL); 
 
 function ChangeView({ center }) {
     const map = useMap();
@@ -28,34 +27,39 @@ function ChangeView({ center }) {
 const CitizenDashboard = () => {
     const [position, setPosition] = useState([13.0827, 80.2707]);
     const [isDarkMode, setIsDarkMode] = useState(true);
-    const [activeRequestType, setActiveRequestType] = useState(null); // Tracks if we sent a request
-    const [assignedDriver, setAssignedDriver] = useState(null); // Stores Real Driver Info
+    const [activeRequestType, setActiveRequestType] = useState(null); 
+    const [assignedDriver, setAssignedDriver] = useState(null); 
 
     useEffect(() => {
+        // Get user location
         navigator.geolocation.getCurrentPosition(
             (pos) => setPosition([pos.coords.latitude, pos.coords.longitude]),
             (err) => console.error(err),
             { enableHighAccuracy: true }
         );
 
-        // LISTEN FOR DRIVER ACCEPTANCE
+        // 2. LISTEN FOR DRIVER ACCEPTANCE
         socket.on("driver_assigned", (data) => {
             console.log("Driver details received:", data);
             setAssignedDriver(data); 
-            setActiveRequestType(null); // Stop showing the "Searching" loader
+            setActiveRequestType(null); 
         });
 
-        return () => { socket.off("driver_assigned"); };
+        // Cleanup connection listeners on unmount
+        return () => { 
+            socket.off("driver_assigned"); 
+        };
     }, []);
 
     const handleRequest = (type) => {
+        // 3. EMIT REQUEST
         socket.emit("send_request_to_driver", {
             type: type,
             lat: position[0],
             lng: position[1],
             location: "Live Location"
         });
-        setActiveRequestType(type); // Set which type we are currently searching for
+        setActiveRequestType(type); 
     };
 
     return (
@@ -70,7 +74,7 @@ const CitizenDashboard = () => {
                     <h1>Emergency Command Center</h1>
                 </header>
 
-                {/* --- 1. ACTIVE BOOKING SECTION (Shows when Driver accepts) --- */}
+                {/* ACTIVE BOOKING SECTION */}
                 {assignedDriver && (
                     <div className="driver-contact-banner">
                         <div className="banner-content">
@@ -89,7 +93,7 @@ const CitizenDashboard = () => {
                     </div>
                 )}
 
-                {/* --- 2. SEARCHING SECTION (Shows while waiting) --- */}
+                {/* SEARCHING SECTION */}
                 {activeRequestType && !assignedDriver && (
                     <div className="searching-banner">
                         <div className="loader-small"></div>
@@ -98,7 +102,7 @@ const CitizenDashboard = () => {
                     </div>
                 )}
 
-                {/* --- 3. THE ACTION GRID (Always visible now) --- */}
+                {/* ACTION GRID */}
                 <div className="action-grid">
                     <div className="action-card ambulance" onClick={() => handleRequest("Ambulance")}>
                         <div className="icon">🚨</div>

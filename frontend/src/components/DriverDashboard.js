@@ -17,11 +17,11 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- UPDATED: USE YOUR https://emergency-backend-maclin.onrender.comTUNNEL URL HERE ---
-// Open your JS files and change this line:
+// --- API & SOCKET SETUP ---
 const API_URL = "https://emergency-backend-maclin.onrender.com";
-// ✅ RIGHT: You must define the variable name first
-const TUNNEL_URL = "https://emergency-backend-maclin.onrender.com";
+// 1. INITIALIZE SOCKET CONNECTION
+const socket = io(API_URL);
+
 function ChangeView({ center }) {
     const map = useMap();
     useEffect(() => {
@@ -31,7 +31,7 @@ function ChangeView({ center }) {
 }
 
 const DriverDashboard = () => {
-    const [position, setPosition] = useState([13.0827, 80.2707]); // Default center
+    const [position, setPosition] = useState([13.0827, 80.2707]);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [requests, setRequests] = useState([]); 
     const [activeRequest, setActiveRequest] = useState(null);
@@ -39,18 +39,19 @@ const DriverDashboard = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [status, setStatus] = useState("Available");
 
-    // --- PLACEHOLDER FOR REAL DRIVER INFO ---
-    // In a real app, you would get this from https://emergency-backend-maclin.onrender.comStorage or your Login state
+    // 2. GET REAL DRIVER INFO FROM STORAGE (Fallback to Placeholder)
+    const storedUser = JSON.parse(localStorage.getItem('user')) || {};
     const driverInfo = {
-        fullName: "Maclin", 
-        phone: "+91 98765 43210"
+        fullName: storedUser.fullName || "Driver", 
+        phone: storedUser.phone || "+91 00000 00000"
     };
 
     const darkTiles = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
     const lightTiles = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
     useEffect(() => {
-        socket.on("connect", () => console.log("Driver Connected via https://emergency-backend-maclin.onrender.comtunnel"));
+        // 3. SOCKET LISTENERS
+        socket.on("connect", () => console.log("Driver Connected via Render"));
 
         socket.on("incoming_request", (data) => {
             const newReq = { ...data, id: Date.now() };
@@ -62,6 +63,7 @@ const DriverDashboard = () => {
             (pos) => {
                 const { latitude, longitude } = pos.coords;
                 setPosition([latitude, longitude]);
+                // Share live location with citizens
                 socket.emit("update_driver_location", { lat: latitude, lng: longitude });
             },
             (err) => console.error("GPS Error:", err),
@@ -70,6 +72,7 @@ const DriverDashboard = () => {
 
         return () => {
             socket.off("incoming_request");
+            socket.off("connect");
             navigator.geolocation.clearWatch(watchId);
         };
     }, []);
@@ -80,7 +83,7 @@ const DriverDashboard = () => {
         setNotifications([`Accepted ${req.type} request`, ...notifications]);
         setRequests(requests.filter(r => r.id !== req.id));
         
-        // --- UPDATED: SEND REAL DATA TO SERVER ---
+        // 4. SEND RESPONSE TO SPECIFIC CITIZEN
         socket.emit("accept_request", { 
             citizenSocketId: req.citizenSocketId,
             driverName: driverInfo.fullName,
@@ -181,7 +184,7 @@ const DriverDashboard = () => {
                         <TileLayer url={isDarkMode ? darkTiles : lightTiles} />
                         <ChangeView center={position} />
                         <Marker position={position}>
-                            <Popup>Your Location (Ambulance)</Popup>
+                            <Popup>Your Location ({driverInfo.fullName})</Popup>
                         </Marker>
 
                         {activeRequest && (
