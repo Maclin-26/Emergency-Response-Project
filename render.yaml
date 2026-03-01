@@ -1,0 +1,13 @@
+services:
+  # Your Node.js Backend
+  - type: web
+    name: emergency-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGO_URI
+        sync: false # You will paste your Atlas link in the Render dashboard
+      - key: PORT
+        value: 10000
