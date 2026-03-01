@@ -11,7 +11,6 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // 1. DATABASE CONNECTION (MongoDB Atlas)
-// REPLACE 'YOUR_PASSWORD_HERE' with your actual database user password
 const atlasURI = "mongodb+srv://Maclin:Maclinmac1122@cluster0.ilbpnxp.mongodb.net/emergencyDB?retryWrites=true&w=majority&appName=Cluster0";
 
 mongoose.connect(atlasURI)
@@ -43,7 +42,7 @@ app.post('/api/signup', async (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: { 
-        origin: "*", // Allows your friend's React app to connect
+        origin: "*", 
         methods: ["GET", "POST"]
     }
 });
@@ -56,7 +55,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send_request_to_driver", (data) => {
+        // We attach the citizen's socket ID so the driver knows who to reply to
         socket.broadcast.emit("incoming_request", { ...data, citizenSocketId: socket.id });
+    });
+
+    // --- NEW LOGIC: PASS REAL DRIVER INFO TO CITIZEN ---
+    socket.on("accept_request", (data) => {
+        console.log("🚑 Driver accepted request. Sending info to citizen:", data.citizenSocketId);
+        
+        // This sends the driver's real name and phone only to the citizen who requested it
+        io.to(data.citizenSocketId).emit("driver_assigned", {
+            driverName: data.driverName,
+            driverPhone: data.driverPhone
+        });
     });
 
     socket.on("disconnect", () => console.log("User disconnected"));

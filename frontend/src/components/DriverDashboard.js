@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { io } from 'socket.io-client'; // ADDED
+import { io } from 'socket.io-client';
 import 'leaflet/dist/leaflet.css';
 import './Dashboard.css';
 
@@ -17,9 +17,10 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- REPLACE WITH YOUR ACTUAL NGROK URL ---
-const NGROK_URL = "https://your-ngrok-id.ngrok-free.app";
-const socket = io(NGROK_URL);
+// --- UPDATED: USE YOUR LOCALTUNNEL URL HERE ---
+// Open your JS files and change this line:
+const TUNNEL_URL = "https://bumpy-emus-throw.loca.lt";
+const socket = io(TUNNEL_URL);
 
 function ChangeView({ center }) {
     const map = useMap();
@@ -32,34 +33,38 @@ function ChangeView({ center }) {
 const DriverDashboard = () => {
     const [position, setPosition] = useState([13.0827, 80.2707]); // Default center
     const [isDarkMode, setIsDarkMode] = useState(true);
-    const [requests, setRequests] = useState([]); // Now starts empty to receive real data
+    const [requests, setRequests] = useState([]); 
     const [activeRequest, setActiveRequest] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [status, setStatus] = useState("Available");
 
+    // --- PLACEHOLDER FOR REAL DRIVER INFO ---
+    // In a real app, you would get this from localStorage or your Login state
+    const driverInfo = {
+        fullName: "Maclin", 
+        phone: "+91 98765 43210"
+    };
+
     const darkTiles = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
     const lightTiles = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
     useEffect(() => {
-        // 1. Connect to Socket
-        socket.on("connect", () => console.log("Driver Connected to Server"));
+        socket.on("connect", () => console.log("Driver Connected via Localtunnel"));
 
-        // 2. Listen for real-time Emergency Requests from Citizens
         socket.on("incoming_request", (data) => {
             const newReq = { ...data, id: Date.now() };
             setRequests((prev) => [...prev, newReq]);
             setNotifications((prev) => [`🚨 New ${data.type} request!`, ...prev]);
         });
 
-        // 3. Track Driver GPS and send to Server
         const watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 const { latitude, longitude } = pos.coords;
                 setPosition([latitude, longitude]);
                 socket.emit("update_driver_location", { lat: latitude, lng: longitude });
             },
-            (err) => console.error(err),
+            (err) => console.error("GPS Error:", err),
             { enableHighAccuracy: true }
         );
 
@@ -75,8 +80,12 @@ const DriverDashboard = () => {
         setNotifications([`Accepted ${req.type} request`, ...notifications]);
         setRequests(requests.filter(r => r.id !== req.id));
         
-        // Notify the specific citizen that help is on the way
-        socket.emit("accept_request", { citizenSocketId: req.citizenSocketId });
+        // --- UPDATED: SEND REAL DATA TO SERVER ---
+        socket.emit("accept_request", { 
+            citizenSocketId: req.citizenSocketId,
+            driverName: driverInfo.fullName,
+            driverPhone: driverInfo.phone
+        });
     };
 
     const rejectRequest = (id) => {
@@ -95,7 +104,6 @@ const DriverDashboard = () => {
             <nav className="navbar">
                 <div className="logo">SmartResponse AI - Driver</div>
                 <div className="nav-controls">
-                    
                     <button 
                         className="notification-btn"
                         onClick={() => setShowNotifications(!showNotifications)}

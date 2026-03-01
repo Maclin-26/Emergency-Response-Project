@@ -9,8 +9,9 @@ const Login = () => {
     const [userRole, setUserRole] = useState('citizen');
     const navigate = useNavigate();
 
-    // --- NEW: NGROK URL FOR REMOTE CONNECTIONS ---
-    const API_BASE_URL = "https://your-ngrok-id.ngrok-free.app"; 
+    // --- UPDATED: USE YOUR LOCALTUNNEL URL HERE ---
+    // Open your JS files and change this line:
+const TUNNEL_URL = "https://bumpy-emus-throw.loca.lt";
 
     // Google Login Logic
     const login = useGoogleLogin({
@@ -54,7 +55,8 @@ const Login = () => {
             }
         } catch (error) {
             console.error("DB Error:", error);
-            alert("Could not connect to the remote server via Ngrok!");
+            // Updated alert to mention Localtunnel
+            alert("Could not connect to the remote server via Localtunnel!");
         }
     };
 
