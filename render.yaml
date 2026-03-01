@@ -1,13 +1,14 @@
 services:
-  # Your Node.js Backend
   - type: web
-    name: emergency-backend
+    name: emergency-backend-maclin
     runtime: node
     plan: free
-    buildCommand: npm install
-    startCommand: node server.js
+    # 1. Tell Render to install from the backend folder
+    buildCommand: cd backend && npm install
+    # 2. Tell Render to start the file inside the backend folder
+    startCommand: cd backend && node server.js
     envVars:
       - key: MONGO_URI
-        sync: false # You will paste your Atlas link in the Render dashboard
+        sync: false
       - key: PORT
         value: 10000
