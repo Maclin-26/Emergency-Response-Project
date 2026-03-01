@@ -5,7 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './Dashboard.css';
 
-const socket = io("http://localhost:3001");
+const socket = io("http://https://emergency-backend-maclin.onrender.comhost:3001");
 
 // --- CUSTOM ICONS ---
 const ambulanceIcon = L.divIcon({

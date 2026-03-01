@@ -17,11 +17,11 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- UPDATED: USE YOUR LOCALTUNNEL URL HERE ---
+// --- UPDATED: USE YOUR https://emergency-backend-maclin.onrender.comTUNNEL URL HERE ---
 // Open your JS files and change this line:
-const TUNNEL_URL = "https://bumpy-emus-throw.loca.lt";
-const socket = io(TUNNEL_URL);
-
+const API_URL = "https://emergency-backend-maclin.onrender.com";
+// ✅ RIGHT: You must define the variable name first
+const TUNNEL_URL = "https://emergency-backend-maclin.onrender.com";
 function ChangeView({ center }) {
     const map = useMap();
     useEffect(() => {
@@ -40,7 +40,7 @@ const DriverDashboard = () => {
     const [status, setStatus] = useState("Available");
 
     // --- PLACEHOLDER FOR REAL DRIVER INFO ---
-    // In a real app, you would get this from localStorage or your Login state
+    // In a real app, you would get this from https://emergency-backend-maclin.onrender.comStorage or your Login state
     const driverInfo = {
         fullName: "Maclin", 
         phone: "+91 98765 43210"
@@ -50,7 +50,7 @@ const DriverDashboard = () => {
     const lightTiles = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
     useEffect(() => {
-        socket.on("connect", () => console.log("Driver Connected via Localtunnel"));
+        socket.on("connect", () => console.log("Driver Connected via https://emergency-backend-maclin.onrender.comtunnel"));
 
         socket.on("incoming_request", (data) => {
             const newReq = { ...data, id: Date.now() };

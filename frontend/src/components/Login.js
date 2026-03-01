@@ -11,7 +11,7 @@ const Login = () => {
 
     // --- UPDATED: USE YOUR LOCALTUNNEL URL HERE ---
     // Open your JS files and change this line:
-const TUNNEL_URL = "https://bumpy-emus-throw.loca.lt";
+const API_URL = "https://emergency-backend-maclin.onrender.com";
 
     // Google Login Logic
     const login = useGoogleLogin({

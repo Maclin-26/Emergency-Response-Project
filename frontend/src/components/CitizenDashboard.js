@@ -15,8 +15,9 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // --- TUNNEL URL ---
 // Open your JS files and change this line:
-const TUNNEL_URL = "https://bumpy-emus-throw.loca.lt";
-const socket = io(TUNNEL_URL);
+const API_URL = "https://emergency-backend-maclin.onrender.com";
+// ✅ RIGHT: You must define the variable name first
+const TUNNEL_URL = "https://emergency-backend-maclin.onrender.com";
 
 function ChangeView({ center }) {
     const map = useMap();

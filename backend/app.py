@@ -6,12 +6,12 @@ import os
 app = Flask(__name__)
 
 # UPDATED CORS: Explicitly allow the React origin to prevent blockages
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "http://https://emergency-backend-maclin.onrender.comhost:3000"}})
 
 # MongoDB Connection
 try:
-    # Use localhost instead of 127.0.0.1 for better compatibility on some Windows setups
-    client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+    # Use https://emergency-backend-maclin.onrender.comhost instead of 127.0.0.1 for better compatibility on some Windows setups
+    client = MongoClient("mongodb://https://emergency-backend-maclin.onrender.comhost:27017/", serverSelectionTimeoutMS=5000)
     db = client['emergency_system']
     users_collection = db['users']
     # Trigger a call to check if connection is truly alive

@@ -7,8 +7,8 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
+            "name": "Launch Chrome against https://emergency-backend-maclin.onrender.comhost",
+            "url": "http://https://emergency-backend-maclin.onrender.comhost:8080",
             "webRoot": "${workspaceFolder}"
         }
     ]
