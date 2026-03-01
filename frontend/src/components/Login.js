@@ -9,9 +9,8 @@ const Login = () => {
     const [userRole, setUserRole] = useState('citizen');
     const navigate = useNavigate();
 
-    // --- UPDATED: USE YOUR LOCALTUNNEL URL HERE ---
-    // Open your JS files and change this line:
-const API_URL = "https://emergency-backend-maclin.onrender.com";
+    // Centralized API URL
+    const API_BASE_URL = "https://emergency-backend-maclin.onrender.com";
 
     // Google Login Logic
     const login = useGoogleLogin({
@@ -22,7 +21,7 @@ const API_URL = "https://emergency-backend-maclin.onrender.com";
         onError: () => alert('Google Login Failed'),
     });
 
-    // --- UPDATED SIGN UP LOGIC WITH REMOTE URL ---
+    // --- SIGN UP LOGIC ---
     const handleSignUp = async (e) => {
         e.preventDefault();
         
@@ -40,7 +39,6 @@ const API_URL = "https://emergency-backend-maclin.onrender.com";
         const userData = { fullName, email, phone, password, role: userRole };
 
         try {
-            // UPDATED: Replaced localhost with API_BASE_URL
             const response = await fetch(`${API_BASE_URL}/api/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -49,27 +47,48 @@ const API_URL = "https://emergency-backend-maclin.onrender.com";
 
             if (response.ok) {
                 alert(`Account created for ${fullName}!`);
-                navigate(userRole === 'driver' ? '/driver-dashboard' : '/citizen-dashboard');
+                setIsRightActive(false); // Move to sign in panel
             } else {
                 alert("Signup failed! Email might already be registered.");
             }
         } catch (error) {
             console.error("DB Error:", error);
-            // Updated alert to mention Localtunnel
-            alert("Could not connect to the remote server via Localtunnel!");
+            alert("Server is waking up or unreachable. Please wait 30 seconds and try again.");
         }
     };
 
-    const handleSignIn = (e) => {
+    // --- SIGN IN LOGIC (UPDATED TO TALK TO RENDER) ---
+    const handleSignIn = async (e) => {
         e.preventDefault();
-        // Since you are handling the index manually in the form array:
-        const email = e.target.form[0].value;
-        const pass = e.target.form[1].value;
+        
+        // Target the specific inputs in the sign-in form
+        const email = e.target.closest('form').querySelector('input[type="email"]').value;
+        const password = e.target.closest('form').querySelector('input[type="password"]').value;
 
-        if (email && pass) {
-            navigate('/citizen-dashboard');
-        } else {
+        if (!email || !password) {
             alert("Please enter both email and password.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Save user info if needed
+                localStorage.setItem('user', JSON.stringify(data.user));
+                navigate(data.user.role === 'driver' ? '/driver-dashboard' : '/citizen-dashboard');
+            } else {
+                alert(data.message || "Invalid email or password.");
+            }
+        } catch (error) {
+            console.error("Login Error:", error);
+            alert("Unable to connect to the server. Make sure the Render backend is live.");
         }
     };
 
@@ -103,7 +122,7 @@ const API_URL = "https://emergency-backend-maclin.onrender.com";
 
                 {/* Sign In Form */}
                 <div className="form-container sign-in-container">
-                    <form onSubmit={(e) => e.preventDefault()}>
+                    <form onSubmit={handleSignIn}>
                         <h1>Log In</h1>
                         <input type="email" placeholder="Email" required />
                         <div className="password-wrapper">
@@ -116,7 +135,7 @@ const API_URL = "https://emergency-backend-maclin.onrender.com";
                                 {showPassword ? "👁️" : "🙈"}
                             </span>
                         </div>
-                        <button className="main-btn" onClick={handleSignIn}>Sign In</button>
+                        <button type="submit" className="main-btn">Sign In</button>
                         
                         <div className="social-login">
                             <p>or</p>
