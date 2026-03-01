@@ -74,7 +74,9 @@ io.on("connection", (socket) => {
 });
 
 // 5. START SERVER
-server.listen(3001, () => {
-    console.log("🚀 Server is live on Port 3001");
-    console.log("📡 Friend should connect using your IP or Ngrok URL");
+const PORT = process.env.PORT || 10000;
+
+// Adding '0.0.0.0' is a pro-tip for Render/Cloud deployments
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server is running on port ${PORT}`);
 });
