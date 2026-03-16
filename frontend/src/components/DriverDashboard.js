@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { io } from 'socket.io-client';
+import RoutingMachine from './RoutingMachine'; 
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; 
 import './Dashboard.css';
 
-// --- FIX FOR LEAFLET DEFAULT ICONS ---
+// --- LEAFLET ICON FIX ---
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -19,7 +21,6 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // --- API & SOCKET SETUP ---
 const API_URL = "https://emergency-backend-maclin.onrender.com";
-// 1. INITIALIZE SOCKET CONNECTION
 const socket = io(API_URL);
 
 function ChangeView({ center }) {
@@ -38,8 +39,8 @@ const DriverDashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [status, setStatus] = useState("Available");
+    const [incomingPopup, setIncomingPopup] = useState(null); // ADDED: Popup state
 
-    // 2. GET REAL DRIVER INFO FROM STORAGE (Fallback to Placeholder)
     const storedUser = JSON.parse(localStorage.getItem('user')) || {};
     const driverInfo = {
         fullName: storedUser.fullName || "Driver", 
@@ -50,20 +51,19 @@ const DriverDashboard = () => {
     const lightTiles = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
     useEffect(() => {
-        // 3. SOCKET LISTENERS
         socket.on("connect", () => console.log("Driver Connected via Render"));
 
         socket.on("incoming_request", (data) => {
             const newReq = { ...data, id: Date.now() };
             setRequests((prev) => [...prev, newReq]);
             setNotifications((prev) => [`🚨 New ${data.type} request!`, ...prev]);
+            setIncomingPopup(newReq); // ADDED: Trigger popup
         });
 
         const watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 const { latitude, longitude } = pos.coords;
                 setPosition([latitude, longitude]);
-                // Share live location with citizens
                 socket.emit("update_driver_location", { lat: latitude, lng: longitude });
             },
             (err) => console.error("GPS Error:", err),
@@ -83,7 +83,6 @@ const DriverDashboard = () => {
         setNotifications([`Accepted ${req.type} request`, ...notifications]);
         setRequests(requests.filter(r => r.id !== req.id));
         
-        // 4. SEND RESPONSE TO SPECIFIC CITIZEN
         socket.emit("accept_request", { 
             citizenSocketId: req.citizenSocketId,
             driverName: driverInfo.fullName,
@@ -104,45 +103,44 @@ const DriverDashboard = () => {
 
     return (
         <div className={`dashboard-wrapper ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
+            
+            {/* ADDED: EMERGENCY POPUP MODAL */}
+            {incomingPopup && (
+                <div className="modal-overlay">
+                    <div className="emergency-modal">
+                        <h2>🚨 NEW EMERGENCY</h2>
+                        <p>Type: <strong>{incomingPopup.type}</strong></p>
+                        <button className="accept-btn" onClick={() => { acceptRequest(incomingPopup); setIncomingPopup(null); }}>
+                            ACCEPT MISSION
+                        </button>
+                        <button className="reject-btn" onClick={() => setIncomingPopup(null)}>Dismiss</button>
+                    </div>
+                </div>
+            )}
+
             <nav className="navbar">
                 <div className="logo">SmartResponse AI - Driver</div>
                 <div className="nav-controls">
-                    <button 
-                        className="notification-btn"
-                        onClick={() => setShowNotifications(!showNotifications)}
-                    >
+                    <button className="notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
                         🔔 Notifications {notifications.length > 0 && `(${notifications.length})`}
                     </button>
-
                     <button className="theme-btn" onClick={() => setIsDarkMode(!isDarkMode)}>
                         {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
                     </button>
-
-                    <button className="logout-btn" onClick={() => window.location.href='/'}>
-                        Logout
-                    </button>
+                    <button className="logout-btn" onClick={() => window.location.href='/'}>Logout</button>
                 </div>
             </nav>
 
             {showNotifications && (
                 <div className="notification-panel">
                     <h3>🔔 Notifications</h3>
-                    {notifications.length === 0 ? (
-                        <p className="no-notification">No Notifications</p>
-                    ) : (
-                        notifications.map((note, index) => (
-                            <div key={index} className="notification-item">
-                                {note}
-                            </div>
-                        ))
-                    )}
+                    {notifications.length === 0 ? <p className="no-notification">No Notifications</p> : 
+                        notifications.map((note, index) => <div key={index} className="notification-item">{note}</div>)}
                 </div>
             )}
 
             <div className="main-content">
-                <header className="hero-section">
-                    <h1>Responder Control Panel</h1>
-                </header>
+                <header className="hero-section"><h1>Responder Control Panel</h1></header>
 
                 <div className="status-section">
                     <h2>Current Status: <span className="status-text">{status}</span></h2>
@@ -153,18 +151,14 @@ const DriverDashboard = () => {
                         <h3>🚨 Active Emergency</h3>
                         <p><strong>Type:</strong> {activeRequest.type}</p>
                         <p><strong>Location:</strong> {activeRequest.location || "GPS Coordinates"}</p>
-                        <button className="complete-btn" onClick={completeMission}>
-                            Mark as Completed
-                        </button>
+                        <button className="complete-btn" onClick={completeMission}>Mark as Completed</button>
                     </div>
                 )}
 
                 <div className="requests-section">
                     <h2>🚑 Available Emergency Requests</h2>
                     <div className="request-grid">
-                        {requests.length === 0 ? (
-                            <p>No pending requests. Waiting for live emergencies...</p>
-                        ) : (
+                        {requests.length === 0 ? <p>No pending requests. Waiting...</p> : 
                             requests.map(req => (
                                 <div key={req.id} className="request-card">
                                     <h3>{req.type}</h3>
@@ -174,8 +168,7 @@ const DriverDashboard = () => {
                                         <button className="reject-btn" onClick={() => rejectRequest(req.id)}>Reject</button>
                                     </div>
                                 </div>
-                            ))
-                        )}
+                            ))}
                     </div>
                 </div>
 
@@ -183,14 +176,21 @@ const DriverDashboard = () => {
                     <MapContainer center={position} zoom={13} style={{ height: '100%', width: '100%' }}>
                         <TileLayer url={isDarkMode ? darkTiles : lightTiles} />
                         <ChangeView center={position} />
+                        
                         <Marker position={position}>
                             <Popup>Your Location ({driverInfo.fullName})</Popup>
                         </Marker>
 
                         {activeRequest && (
-                            <Marker position={[activeRequest.lat || position[0], activeRequest.lng || position[1]]}>
-                                <Popup>EMERGENCY HERE</Popup>
-                            </Marker>
+                            <>
+                                <Marker position={[activeRequest.lat, activeRequest.lng]}>
+                                    <Popup>Emergency Location</Popup>
+                                </Marker>
+                                <RoutingMachine 
+                                    start={position} 
+                                    end={[activeRequest.lat, activeRequest.lng]} 
+                                />
+                            </>
                         )}
                     </MapContainer>
                 </div>
